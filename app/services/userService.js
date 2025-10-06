@@ -1,32 +1,224 @@
 import bcrypt from "bcryptjs";
-const users = [];
+import jwt from "jsonwebtoken";
+import SECRET from "../constants/constants.js";
+import prisma from "../prisma.js";
 
-export const registrar = async ({ username, password }) => {
-    //const usuarioExistente = username.find((user) => user.username === username);
-    const usuarioExistente = await prisma.User.findUnique({
-        where: {username}
-    })
+//register
+export const registrar = async ({ name, username, password }) => {
+    const usuariosExistente = await prisma.user.findUnique({
+        where: { username },
+    });
 
-
-    if (usuarioExistente) throw new Error("ya existe el usuario");
-
+    if (usuariosExistente) {
+        throw new Error("El usuario ya existe")
+    };
     const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await prisma.user.create({
+        data: {
+            username,
+            name,
+            password: hashedPassword,
+        },
+    });
 
-    const newUser = { id: username, username, password: hashedPassword };
-    users.push(newUser);
+    return {
+        username: newUser.username,
+        name: newUser.name,
+    };
+};
 
-    return { newUser };
-}
+//login
+export const loguear = async ({ username, password }) => {
 
+    const user = await prisma.user.findUnique({
+        where: { username },
+    });
 
-export const login = async ({ username, password }) => {
-    const user = users.find((u) => u.username === username);
-    if(!user) throw new Error ("usuario no encontrado");
+    if (!user) {
+        throw new Error("usuario no encontrado");
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new Error ("Usuario y/o contrasena incorrectors");
-    const token = jwt.sign ({username: user.username}, SECRET, {expiresIn:"1h",});
+    if (!isMatch) {
+        throw new Error("usuario y/o contraseña incorrectos");
+    }
 
-    return {user: {username: user.username}, token};
+    const token = jwt.sign({ id: user.id, username: user.username }, SECRET, {
+        expiresIn: "1h",
+    });
+    return {
+        user: {
+            id: user.id,
+            username: user.username,
+        },
+        token,
+    };
 
+};
+
+export const crearUsuario = async ({ name, username, password }) => {
+    const usuarioOcupado = await prisma.user.findUnique({
+        where: { username: username }
+    });
+
+    if (usuarioOcupado) {
+        throw new Error("nombre de usuario ocupado");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await prisma.user.create({
+        data: {
+            name,
+            username,
+            password: hashedPassword,
+        },
+        select: {
+            id: true,
+            username: true,
+            name: true,
+        },
+    });
+    return newUser;
+};
+
+//listar todos
+export const listarTodosLosUsuarios = async (password) => {
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userMany = await prisma.user.findMany({
+        select: {
+            id: true,
+            username: true,
+            password: hashedPassword
+        },
+    });
+    if (!userMany) {
+        throw new Error("no hay usuarios");
+    }
+    return userMany;
+};
+
+//listar uno
+export const obtenerUsuarioPorId = async (userId) => {
+    const id = parseInt(userId);
+
+    if (isNaN(id)) {
+        throw new Error("id de usuario invalido");
+    }
+    const userById = await prisma.user.findUnique({
+        where: {
+            id
+        },
+        select: {
+            id: true,
+            username: true,
+            name: true,
+        },
+    });
+    if (!userById) {
+        throw new Error("usuario no encontrado");
+    }
+    return userById;
+};
+
+//editar nombre y nombre de usuario
+export const editarUsuario = async (userId, { name, username }) => {
+    const userUpdate = await prisma.user.update({
+        where: { id: userId },
+        data: {
+            ...(name !== undefined && { name }),
+            ...(username !== undefined && { username }),
+        },
+        select: {
+            id: true,
+            username: true,
+            name: true,
+        },
+    });
+    return userUpdate
+};
+
+//eliminar usuario
+export const eliminarUsuario = async (userId) => {
+
+    const usuarioExistente = await prisma.user.findUnique({
+        where: { id: userId }
+    });
+    if (!usuarioExistente) {
+        throw new Error("Usuario no encontrado");
+    }
+    const usuarioEliminado = await prisma.user.delete({
+        where: { id: userId }
+    });
+
+    return usuarioEliminado;
+};
+
+export const obtenerPerfilDeUsuario = async (userId) => {
+    const perfil = await prisma.perfil.findUnique({
+        where: {
+            userId
+        },
+        select: {
+            id: true,
+            bio: true,
+            edad: true,
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    username: true
+                }
+            }
+        }
+    });
+    if (!perfil) throw new Error("Perfil no encontrado");
+    return perfil;
+};
+
+export const obtenerTodosLosPerfiles = async () => {
+    const perfiles = await prisma.perfil.findMany({
+        select: {
+            id: true,
+            bio: true,
+            edad: true,
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    username: true
+                }
+            }
+        }
+    });
+    return perfiles;
 }
+
+export const crearPerfilDeUsuario = async (userId, { bio, edad }) => {
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    });
+    if (!user) throw new Error("usuario no encontrado");
+
+    const perfilExistente = await prisma.perfil.findUnique({
+        where: {
+            userId
+        }
+    });
+    if (perfilExistente) throw new Error("el usuario ya tiene un perfil");
+
+    const perfil = await prisma.perfil.create({
+        data: {
+            bio,
+            edad,
+            userId
+        },
+        select: {
+            id: true,
+            bio: true,
+            edad: true
+        }
+    });
+    return perfil;
+};
+
