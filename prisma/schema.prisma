@@ -7,10 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Sexo {
+  Masculino
+  Femenino
+  Otro
+}
+
 model User {
   id       Int     @id @default(autoincrement())
   username String  @unique
   name     String
+  sexo     Sexo
   password String
   perfil   Perfil?
   tareas   Tarea[]
