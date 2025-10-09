@@ -4,7 +4,7 @@ import SECRET from "../constants/constants.js";
 import prisma from "../prisma.js";
 
 //register
-export const registrar = async ({ name, username, password }) => {
+export const registrar = async ({ name, username, sexo, password }) => {
   const usuariosExistente = await prisma.user.findUnique({
     where: { username },
   });
@@ -17,6 +17,7 @@ export const registrar = async ({ name, username, password }) => {
     data: {
       username,
       name,
+      sexo,
       password: hashedPassword,
     },
   });
@@ -54,9 +55,9 @@ export const loguear = async ({ username, password }) => {
   };
 };
 
-export const crearUsuario = async ({ name, username }) => {
+export const crearUsuario = async ({ name, username, sexo, password }) => {
   const usuarioOcupado = await prisma.user.findUnique({
-    where: { username: username },
+    where: { username: username, sexo, password },
   });
 
   if (usuarioOcupado) {
@@ -67,12 +68,14 @@ export const crearUsuario = async ({ name, username }) => {
     data: {
       name,
       username,
-      password: hashedPassword,
+      sexo,
+      password,
     },
     select: {
       id: true,
       username: true,
       name: true,
+      sexo: true
     },
   });
   return newUser;
@@ -80,6 +83,7 @@ export const crearUsuario = async ({ name, username }) => {
 
 //listar todos
 export const listarTodosLosUsuarios = async (sexo) => {
+
   const userMany = await prisma.user.findMany({
     where: { sexo },
     select: {
@@ -126,6 +130,13 @@ export const obtenerUsuarioPorId = async (userId) => {
 
 //editar nombre y nombre de usuario
 export const editarUsuario = async (userId, { name, username }) => {
+  const id = parseInt(userId);
+
+  if (isNaN(id)) {
+    throw new Error("id de usuario invalido");
+  }
+
+
   const userUpdate = await prisma.user.update({
     where: { id: userId },
     data: {
@@ -143,6 +154,11 @@ export const editarUsuario = async (userId, { name, username }) => {
 
 //eliminar usuario
 export const eliminarUsuario = async (userId) => {
+  const id = parseInt(userId);
+
+  if (isNaN(id)) {
+    throw new Error("id de usuario invalido");
+  }
   const usuarioExistente = await prisma.user.findUnique({
     where: { id: userId },
   });
@@ -157,6 +173,11 @@ export const eliminarUsuario = async (userId) => {
 };
 
 export const obtenerPerfilDeUsuario = async (userId) => {
+  const id = parseInt(userId);
+
+  if (isNaN(id)) {
+    throw new Error("id de usuario invalido");
+  }
   const perfil = await prisma.perfil.findUnique({
     where: {
       userId,

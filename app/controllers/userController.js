@@ -13,12 +13,12 @@ import {
 
 export const registrarUsuario = async (req, res) => {
   try {
-    const { name, username, password } = req.body;
-    if (!name || !username || !password) {
+    const { name, username, sexo, password } = req.body;
+    if (!name || !username || !sexo || !password) {
       return res.status(400).json({ msg: "complete toods los campos" });
     }
 
-    const user = await registrar({ name, username, password });
+    const user = await registrar({ name, username, sexo, password });
     res.status(201).json({ msg: "usuario registrado correctamente" });
   } catch (error) {
     res.status(400).json({ msg: error.message });
@@ -46,6 +46,7 @@ export const ListarTodosLosUsuarios = async (req, res) => {
     res.json(usuarios);
   } catch (error) {
     return res.status(404).json({ msg: error.message });
+
   }
 };
 
@@ -81,6 +82,7 @@ export const eliminarUnUsuario = async (req, res) => {
     if (error.message === "Usuario no encontrado") {
       return res.status(404).json({ msg: error.message });
     }
+    return res.status(500).json({ msg: "Error al eliminar usuario", error: error.message });
   }
 };
 
@@ -130,13 +132,13 @@ export const obtenerTareasDeUsuario = async (req, res, next) => {
 
 export const crearNuevoUsuario = async (req, res) => {
   try {
-    const { name, username, password } = req.body;
+    const { name, username, sexo, password } = req.body;
 
-    if (!name || !username || !password) {
+    if (!name || !username || !sexo || !password) {
       return res.status(400).json({ msg: "Faltan campos obligatorios" });
     }
 
-    const user = await crearUsuario({ name, username, password });
+    const user = await crearUsuario({ name, username, sexo, password });
     res.status(201).json(user);
   } catch (error) {
     return res.status(404).json({ msg: error.message });

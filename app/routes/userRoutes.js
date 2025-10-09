@@ -25,6 +25,7 @@ userRoutes.post("/login", loguearUsuario);
 //endpoints de usuario:
 userRoutes.post("/usuarios", crearNuevoUsuario);
 userRoutes.get("/usuarios", ListarTodosLosUsuarios);
+userRoutes.get("/usuarios", ListarTodosLosUsuarios);
 userRoutes.get("/usuarios/:id", buscarUsuarioPorId);
 userRoutes.delete("/usuarios/:id", eliminarUnUsuario);
 userRoutes.put("/usuarios/:id", actualizarUsuario);
